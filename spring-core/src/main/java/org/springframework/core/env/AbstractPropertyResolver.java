@@ -207,6 +207,7 @@ public abstract class AbstractPropertyResolver implements ConfigurablePropertyRe
 		if (this.strictHelper == null) {
 			this.strictHelper = createPlaceholderHelper(false);
 		}
+		// 通过当前的解析器进行字符串替换
 		return doResolvePlaceholders(text, this.strictHelper);
 	}
 
@@ -235,7 +236,14 @@ public abstract class AbstractPropertyResolver implements ConfigurablePropertyRe
 				this.valueSeparator, ignoreUnresolvablePlaceholders);
 	}
 
+	// 将配置文件中的占位符进行值的替换处理
 	private String doResolvePlaceholders(String text, PropertyPlaceholderHelper helper) {
+		/**
+		 * 再往里走会找到递归调用进行替换, 所以替换符是可以多层嵌套的
+		 * {@link PropertyPlaceholderHelper#parseStringValue(String, PropertyPlaceholderHelper.PlaceholderResolver, Set)}
+		 * 例:
+		 * spring-${profile-${datetime}}-file	-> spring-dev-20200202-file
+		 */
 		return helper.replacePlaceholders(text, this::getPropertyAsRawString);
 	}
 

@@ -43,8 +43,9 @@ import org.springframework.lang.Nullable;
  * @see #getConfigLocations
  * @see org.springframework.beans.factory.xml.XmlBeanDefinitionReader
  */
-public abstract class AbstractXmlApplicationContext extends AbstractRefreshableConfigApplicationContext {
+	public abstract class AbstractXmlApplicationContext extends AbstractRefreshableConfigApplicationContext {
 
+	// 设置xml文件的验证标志，默认是true
 	private boolean validating = true;
 
 
@@ -59,6 +60,7 @@ public abstract class AbstractXmlApplicationContext extends AbstractRefreshableC
 	 * @param parent the parent context
 	 */
 	public AbstractXmlApplicationContext(@Nullable ApplicationContext parent) {
+		// 继续调用父构造器
 		super(parent);
 	}
 

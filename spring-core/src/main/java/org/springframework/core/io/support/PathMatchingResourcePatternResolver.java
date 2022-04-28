@@ -203,6 +203,16 @@ public class PathMatchingResourcePatternResolver implements ResourcePatternResol
 
 	private final ResourceLoader resourceLoader;
 
+	/**
+	 * 创建ant方式的路径匹配器
+	 * 匹配器内部实现就不用了解了, 知道下方的匹配规则即可
+	 * 匹配规则:
+	 *    (1) ? 匹配一个字符（除过操作系统默认的文件分隔符）
+	 *    (2) * 匹配0个或多个字符
+	 *    (3) **匹配0个或多个目录
+	 *    (4) {spring:[a-z]+} 将正则表达式[a-z]+匹配到的值,赋值给名为 spring 的路径变量.
+	 *        (PS:必须是完全匹配才行,在SpringMVC中只有完全匹配才会进入controller层的方法)
+	 */
 	private PathMatcher pathMatcher = new AntPathMatcher();
 
 

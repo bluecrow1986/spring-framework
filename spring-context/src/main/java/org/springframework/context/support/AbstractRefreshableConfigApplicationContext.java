@@ -39,6 +39,7 @@ import org.springframework.util.StringUtils;
 public abstract class AbstractRefreshableConfigApplicationContext extends AbstractRefreshableApplicationContext
 		implements BeanNameAware, InitializingBean {
 
+	// 配置路径(默认是个字符串数组)
 	@Nullable
 	private String[] configLocations;
 
@@ -56,6 +57,7 @@ public abstract class AbstractRefreshableConfigApplicationContext extends Abstra
 	 * @param parent the parent context
 	 */
 	public AbstractRefreshableConfigApplicationContext(@Nullable ApplicationContext parent) {
+		// 继续调用父构造器
 		super(parent);
 	}
 
@@ -70,14 +72,17 @@ public abstract class AbstractRefreshableConfigApplicationContext extends Abstra
 	}
 
 	/**
+	 * 设置应用程序上下文的配置路径
 	 * Set the config locations for this application context.
 	 * <p>If not set, the implementation may use a default as appropriate.
 	 */
 	public void setConfigLocations(@Nullable String... locations) {
 		if (locations != null) {
 			Assert.noNullElements(locations, "Config locations must not be null");
+			// 当前类的全局变量配置路径进行初始化
 			this.configLocations = new String[locations.length];
 			for (int i = 0; i < locations.length; i++) {
+				// 解析给定的路径(解析后去空格)
 				this.configLocations[i] = resolvePath(locations[i]).trim();
 			}
 		}
@@ -115,6 +120,15 @@ public abstract class AbstractRefreshableConfigApplicationContext extends Abstra
 	}
 
 	/**
+	 * 解析给定的路径, 根据给定的解析器通过指定的替换符进行字符串的替换
+	 * 如果未定义解析器将使用 {@link org.springframework.util.PropertyPlaceholderHelper}
+	 * PropertyPlaceholderHelper解析器的替换符 -> ${ 变量 }
+	 *  placeholderPrefix = "${"
+	 *  placeholderSuffix = "}"
+	 *  simplePrefix = "{"
+	 *  valueSeparator = ":"
+	 *  ignoreUnresolvablePlaceholders = false
+	 *
 	 * Resolve the given path, replacing placeholders with corresponding
 	 * environment property values if necessary. Applied to config locations.
 	 * @param path the original file path
@@ -122,6 +136,7 @@ public abstract class AbstractRefreshableConfigApplicationContext extends Abstra
 	 * @see org.springframework.core.env.Environment#resolveRequiredPlaceholders(String)
 	 */
 	protected String resolvePath(String path) {
+		// 解析给定的路径
 		return getEnvironment().resolveRequiredPlaceholders(path);
 	}
 

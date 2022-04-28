@@ -76,12 +76,16 @@ public class ClassPathXmlApplicationContext extends AbstractXmlApplicationContex
 	}
 
 	/**
+	 * ClassPathXmlApplicationContext构造器(一个参数)
+	 * 从xml文件中加载给定的bean定义信息，并且刷新上下文
+	 *
 	 * Create a new ClassPathXmlApplicationContext, loading the definitions
 	 * from the given XML file and automatically refreshing the context.
 	 * @param configLocation resource location
 	 * @throws BeansException if context creation failed
 	 */
 	public ClassPathXmlApplicationContext(String configLocation) throws BeansException {
+		// 调用三个参数的构造器(资源位置, 自动刷新, 无父上下文)
 		this(new String[] {configLocation}, true, null);
 	}
 
@@ -124,6 +128,9 @@ public class ClassPathXmlApplicationContext extends AbstractXmlApplicationContex
 	}
 
 	/**
+	 * 三个参数的构造器
+	 * 从xml文件中加载给定的bean定义信息，并且刷新上下文
+	 *
 	 * Create a new ClassPathXmlApplicationContext with the given parent,
 	 * loading the definitions from the given XML files.
 	 * @param configLocations array of resource locations
@@ -137,10 +144,17 @@ public class ClassPathXmlApplicationContext extends AbstractXmlApplicationContex
 	public ClassPathXmlApplicationContext(
 			String[] configLocations, boolean refresh, @Nullable ApplicationContext parent)
 			throws BeansException {
-
+		// 调用父类构造方法, 进行相关的对象创建等操作, 包含属性的赋值操作
 		super(parent);
+
+		// 设置应用程序上下文的配置路径(包含路径的解析)
 		setConfigLocations(configLocations);
+
 		if (refresh) {
+			/**
+			 * 如果是自动刷新的话进行刷新操作
+			 * 即容器的创建和刷新环节 -> IoC的生命周期
+			 */
 			refresh();
 		}
 	}

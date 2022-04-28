@@ -186,8 +186,10 @@ public abstract class ClassUtils {
 	 */
 	@Nullable
 	public static ClassLoader getDefaultClassLoader() {
+		// 类加载器变量
 		ClassLoader cl = null;
 		try {
+			// 获取当前线程的上下文类加载器
 			cl = Thread.currentThread().getContextClassLoader();
 		}
 		catch (Throwable ex) {
@@ -195,10 +197,13 @@ public abstract class ClassUtils {
 		}
 		if (cl == null) {
 			// No thread context class loader -> use class loader of this class.
+			// 如果当前线程没有上下文类加载器 -> 使用ClassUtils的类加载器
+			// 这层的类加载器都是用户类加载器
 			cl = ClassUtils.class.getClassLoader();
 			if (cl == null) {
 				// getClassLoader() returning null indicates the bootstrap ClassLoader
 				try {
+					// 如果上边的用户类加载器都为空的话, 需要尝试获取系统的类加载器
 					cl = ClassLoader.getSystemClassLoader();
 				}
 				catch (Throwable ex) {

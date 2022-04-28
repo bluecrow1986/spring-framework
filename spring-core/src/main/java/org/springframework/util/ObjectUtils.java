@@ -609,10 +609,14 @@ public abstract class ObjectUtils {
 	 */
 	public static String identityToString(@Nullable Object obj) {
 		if (obj == null) {
+			// 如果为空, 返回空字符串
 			return EMPTY_STRING;
 		}
+		// 全类名
 		String className = obj.getClass().getName();
+		// obj的hashCode的十六进制字符串
 		String identityHexString = getIdentityHexString(obj);
+		// 拼接obj的全类名+'@'+obj的hashCode的十六进制字符串
 		return className + '@' + identityHexString;
 	}
 

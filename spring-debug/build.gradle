@@ -1,0 +1,41 @@
+plugins {
+    id 'java'
+}
+
+group 'org.springframework'
+version '5.2.9.RELEASE'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    compile(project(":spring-beans"))
+    compile(project(":spring-core"))
+    compile(project(":spring-context"))
+    compile(project(":spring-webmvc"))
+    compile(project(":spring-jdbc"))
+    compile(project(":spring-orm"))
+    compile(project(":spring-tx"))
+    compile(project(":spring-web"))
+    compile(project(":spring-context-indexer"))
+    compile(project(":spring-context-support"))
+    compile(project(":spring-expression"))
+    compile(project(":spring-instrument"))
+    compile(project(":spring-jcl"))
+    compile(project(":spring-jms"))
+    compile(project(":spring-messaging"))
+    compile(project(":spring-oxm"))
+    compile(project(":spring-test"))
+    compile(project(":spring-webflux"))
+    compile(project(":spring-websocket"))
+    compile("org.aspectj:aspectjweaver:1.9.6")
+    compile(project(":spring-aop"))
+    testCompile group: 'junit', name: 'junit', version: '4.12'
+    compile("com.alibaba:druid:1.2.4")
+    compile("mysql:mysql-connector-java:5.1.48")
+}
+
+tasks.withType(JavaCompile) {
+    options.encoding = "UTF-8"
+}

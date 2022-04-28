@@ -50,18 +50,22 @@ public class DefaultResourceLoader implements ResourceLoader {
 	@Nullable
 	private ClassLoader classLoader;
 
+	// 协议解析器集合
 	private final Set<ProtocolResolver> protocolResolvers = new LinkedHashSet<>(4);
 
+	// 资源映射缓存
 	private final Map<Class<?>, Map<Resource, ?>> resourceCaches = new ConcurrentHashMap<>(4);
 
 
 	/**
+	 * 无参构造器; 创建一个新的默认资源加载器
 	 * Create a new DefaultResourceLoader.
 	 * <p>ClassLoader access will happen using the thread context class loader
 	 * at the time of this ResourceLoader's initialization.
 	 * @see java.lang.Thread#getContextClassLoader()
 	 */
 	public DefaultResourceLoader() {
+		// 获取默认类加载器
 		this.classLoader = ClassUtils.getDefaultClassLoader();
 	}
 
