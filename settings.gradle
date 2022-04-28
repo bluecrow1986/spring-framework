@@ -1,7 +1,14 @@
 pluginManagement {
 	repositories {
 		gradlePluginPortal()
-		maven { url 'https://repo.spring.io/plugins-release' }
+		maven { url 'https://maven.aliyun.com/repository/public' }
+		/**
+		 * 添加它是解决"build.gradle"中的"id 'io.spring.gradle-enterprise-conventions' version '0.0.2'"报错:
+		 * code 401 from server: Unauthorized
+		 * 原理:
+		 * 现在从原来的源"https://repo.spring.io/plugins-release"下载时需要用户名和密码, 所以验证失败
+		 */
+		maven { url 'https://repo.spring.io/plugins-release-local' }
 	}
 }
 apply from: "$rootDir/gradle/build-cache-settings.gradle"
@@ -36,3 +43,5 @@ rootProject.name = "spring"
 rootProject.children.each {project ->
 	project.buildFileName = "${project.name}.gradle"
 }
+include 'spring-debug'
+
