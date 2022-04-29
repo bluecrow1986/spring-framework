@@ -34,6 +34,15 @@ import org.springframework.lang.Nullable;
 import org.springframework.util.StringValueResolver;
 
 /**
+ * 应用程序上下文感知处理器; 向实现了{@link org.springframework.beans.factory.Aware}接口的bean设置应用程序上下文中的相应属性
+ * 涉及接口：
+ * {@link org.springframework.context.EnvironmentAware}
+ * {@link org.springframework.context.EmbeddedValueResolverAware}
+ * {@link org.springframework.context.ResourceLoaderAware}
+ * {@link org.springframework.context.ApplicationEventPublisherAware}
+ * {@link org.springframework.context.MessageSourceAware}
+ * {@link org.springframework.context.ApplicationContextAware}
+ * -----------------------------------------------------------------------------------------
  * {@link BeanPostProcessor} implementation that supplies the {@code ApplicationContext},
  * {@link org.springframework.core.env.Environment Environment}, or
  * {@link StringValueResolver} for the {@code ApplicationContext} to beans that
@@ -74,24 +83,34 @@ class ApplicationContextAwareProcessor implements BeanPostProcessor {
 		this.embeddedValueResolver = new EmbeddedValueResolver(applicationContext.getBeanFactory());
 	}
 
-
+	/**
+	 * 初始化前的后置处理
+	 * @param bean the new bean instance
+	 * @param beanName the name of the bean
+	 * @return the bean instance to use, either the original or a wrapped one;
+	 * @throws BeansException 实例化的异常
+	 */
 	@Override
 	@Nullable
 	public Object postProcessBeforeInitialization(Object bean, String beanName) throws BeansException {
+		// 如果是由容器通过set方法进行注册的(初始化阶段忽略的), 不进行处理直接返回
 		if (!(bean instanceof EnvironmentAware || bean instanceof EmbeddedValueResolverAware ||
 				bean instanceof ResourceLoaderAware || bean instanceof ApplicationEventPublisherAware ||
 				bean instanceof MessageSourceAware || bean instanceof ApplicationContextAware)){
 			return bean;
 		}
-
+		// 访问控制上下文
 		AccessControlContext acc = null;
 
+		// 系统安全接口不为空
 		if (System.getSecurityManager() != null) {
+			// 将应用程序上下文的访问控制上下文做为当前的访问控制上下文进行赋值
 			acc = this.applicationContext.getBeanFactory().getAccessControlContext();
 		}
 
 		if (acc != null) {
 			AccessController.doPrivileged((PrivilegedAction<Object>) () -> {
+				// 检测bean上是否有Aware接口的实现, 有的话进行相关的调用
 				invokeAwareInterfaces(bean);
 				return null;
 			}, acc);
@@ -103,6 +122,7 @@ class ApplicationContextAwareProcessor implements BeanPostProcessor {
 		return bean;
 	}
 
+	// 如果某个bean实现了某个aware接口, 给指定的bean设置相应的属性值
 	private void invokeAwareInterfaces(Object bean) {
 		if (bean instanceof EnvironmentAware) {
 			((EnvironmentAware) bean).setEnvironment(this.applicationContext.getEnvironment());

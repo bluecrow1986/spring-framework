@@ -47,6 +47,8 @@ import org.springframework.core.io.support.ResourceArrayPropertyEditor;
 import org.springframework.core.io.support.ResourcePatternResolver;
 
 /**
+ * 属性编辑注册器
+ * 在bean创建的时候用来填充具体的属性
  * PropertyEditorRegistrar implementation that populates a given
  * {@link org.springframework.beans.PropertyEditorRegistry}
  * (typically a {@link org.springframework.beans.BeanWrapper} used for bean
@@ -82,6 +84,7 @@ public class ResourceEditorRegistrar implements PropertyEditorRegistrar {
 
 
 	/**
+	 * 填充以下的资源编辑器
 	 * Populate the given {@code registry} with the following resource editors:
 	 * ResourceEditor, InputStreamEditor, InputSourceEditor, FileEditor, URLEditor,
 	 * URIEditor, ClassEditor, ClassArrayEditor.
@@ -121,6 +124,7 @@ public class ResourceEditorRegistrar implements PropertyEditorRegistrar {
 	}
 
 	/**
+	 * 如果可能的话, 覆盖默认的编辑器, 否则注册为自定义编辑器
 	 * Override default editor, if possible (since that's what we really mean to do here);
 	 * otherwise register as a custom editor.
 	 */

@@ -31,6 +31,10 @@ import org.springframework.lang.Nullable;
 import org.springframework.util.ObjectUtils;
 
 /**
+ * 应用程序监听器检测器; 用来检测bean是否实现了{@link ApplicationListener}接口
+ * 1. 实例化完成之后, 如果bean的单例的并且实现了{@link ApplicationListener}接口, 则加入到多播器中;
+ * 2. bean销毁之前, 如果bean是一个{@link ApplicationListener}, 则从多播器中提前删除
+ *
  * {@code BeanPostProcessor} that detects beans which implement the {@code ApplicationListener}
  * interface. This catches beans that can't reliably be detected by {@code getBeanNamesForType}
  * and related operations which only work against top-level beans.
@@ -56,7 +60,12 @@ class ApplicationListenerDetector implements DestructionAwareBeanPostProcessor, 
 		this.applicationContext = applicationContext;
 	}
 
-
+	/**
+	 * singletonNames保存了所有将要创建的bean名称以及这个bean是否是单例的映射关系, 这个方法会在对象被创建出来后, 属性注入之前执行
+	 * @param beanDefinition the merged bean definition for the bean
+	 * @param beanType the actual type of the managed bean instance
+	 * @param beanName the name of the bean
+	 */
 	@Override
 	public void postProcessMergedBeanDefinition(RootBeanDefinition beanDefinition, Class<?> beanType, String beanName) {
 		if (ApplicationListener.class.isAssignableFrom(beanType)) {
@@ -64,21 +73,36 @@ class ApplicationListenerDetector implements DestructionAwareBeanPostProcessor, 
 		}
 	}
 
+	/**
+	 * 初始化前的后置处理, 不做任何处理，直接返回对象
+	 * @param bean the new bean instance
+	 * @param beanName the name of the bean
+	 * @return the bean instance to use, either the original or a wrapped one;
+	 */
 	@Override
 	public Object postProcessBeforeInitialization(Object bean, String beanName) {
 		return bean;
 	}
 
+	/**
+	 * 初始化后的后置处理, 将我们自定义的单例类作为监听器添加到多播器中
+	 * @param bean the new bean instance
+	 * @param beanName the name of the bean
+	 * @return  the bean instance to use, either the original or a wrapped one;
+	 */
 	@Override
 	public Object postProcessAfterInitialization(Object bean, String beanName) {
 		if (bean instanceof ApplicationListener) {
 			// potentially not detected as a listener by getBeanNamesForType retrieval
+			// 判断当前的bean是否为单例
 			Boolean flag = this.singletonNames.get(beanName);
 			if (Boolean.TRUE.equals(flag)) {
 				// singleton bean (top-level or inner): register on the fly
+				// 如果是单例, 直接添加到监听器集合中
 				this.applicationContext.addApplicationListener((ApplicationListener<?>) bean);
 			}
 			else if (Boolean.FALSE.equals(flag)) {
+				// 如果不是单例, 并且应用程序上下文包含该实例名(也可能是嵌套的bean), 输出错误
 				if (logger.isWarnEnabled() && !this.applicationContext.containsBean(beanName)) {
 					// inner bean with other scope - can't reliably process events
 					logger.warn("Inner bean '" + beanName + "' implements ApplicationListener interface " +
@@ -86,6 +110,7 @@ class ApplicationListenerDetector implements DestructionAwareBeanPostProcessor, 
 							"because it does not have singleton scope. Only top-level listener beans are allowed " +
 							"to be of non-singleton scope.");
 				}
+				// 移除
 				this.singletonNames.remove(beanName);
 			}
 		}

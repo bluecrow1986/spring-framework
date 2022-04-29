@@ -82,17 +82,23 @@ import org.springframework.lang.Nullable;
 	@Override
 	protected void loadBeanDefinitions(DefaultListableBeanFactory beanFactory) throws BeansException, IOException {
 		// Create a new XmlBeanDefinitionReader for the given BeanFactory.
+		// 创建一个xml的beanDefinitionReader, 并通过回调设置到beanFactory中
 		XmlBeanDefinitionReader beanDefinitionReader = new XmlBeanDefinitionReader(beanFactory);
 
 		// Configure the bean definition reader with this context's
 		// resource loading environment.
+		// 给reader对象设置环境对象
 		beanDefinitionReader.setEnvironment(this.getEnvironment());
+		// 给reader对象设置当前资源加载器
 		beanDefinitionReader.setResourceLoader(this);
+		// 给reader对象设置当前实体解析器
 		beanDefinitionReader.setEntityResolver(new ResourceEntityResolver(this));
 
 		// Allow a subclass to provide custom initialization of the reader,
 		// then proceed with actually loading the bean definitions.
+		// 初始化beanDefinitionReader对象, 此处设置配置文件是否要进行验证
 		initBeanDefinitionReader(beanDefinitionReader);
+		// 完成加载对象定义
 		loadBeanDefinitions(beanDefinitionReader);
 	}
 
@@ -121,12 +127,16 @@ import org.springframework.lang.Nullable;
 	 * @see #getResourcePatternResolver
 	 */
 	protected void loadBeanDefinitions(XmlBeanDefinitionReader reader) throws BeansException, IOException {
+		// 以资源数组方式获取资源配置文件的资源位置
 		Resource[] configResources = getConfigResources();
 		if (configResources != null) {
+			// 资源数组不为空时进行遍历通过资源信息获取对象定义, 并加载到reader的对象定义
 			reader.loadBeanDefinitions(configResources);
 		}
+		// 以字符串数组方式获取资源配置文件的资源位置
 		String[] configLocations = getConfigLocations();
 		if (configLocations != null) {
+			// 字符串数组不为空时进行遍历通过字符串信息获取对象定义, 并加载到reader的对象定义
 			reader.loadBeanDefinitions(configLocations);
 		}
 	}

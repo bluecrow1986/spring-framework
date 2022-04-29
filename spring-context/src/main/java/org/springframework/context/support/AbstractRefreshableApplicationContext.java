@@ -120,14 +120,26 @@ public abstract class AbstractRefreshableApplicationContext extends AbstractAppl
 	 */
 	@Override
 	protected final void refreshBeanFactory() throws BeansException {
+		// 如果存在BeanFactory, 则销毁BeanFactory
 		if (hasBeanFactory()) {
 			destroyBeans();
 			closeBeanFactory();
 		}
 		try {
+			// 创建DefaultListableBeanFactory对象
 			DefaultListableBeanFactory beanFactory = createBeanFactory();
+			// BeanFactory的序列化id设置为全局的上下文的唯一标识
 			beanFactory.setSerializationId(getId());
+			// 定制BeanFactory, 设置相关属性, 包括是否允许[覆盖同名称的不同定义的对象]和[对象间的循环依赖]
 			customizeBeanFactory(beanFactory);
+			/**
+			 * 初始化并加载对象定义, 进行配置文件(根据入口的不同实例化方式进行不同的方式解析)读取及解析, 自定义标签的解析
+			 * 目前的解析方式:
+			 * XML -> {@link AbstractXmlApplicationContext}
+			 * Annotation -> {@link org.springframework.context.annotation.AnnotationConfigApplicationContext}
+			 * Groovy -> {@link org.springframework.web.context.support.GroovyWebApplicationContext}
+			 * XMLWeb -> {@link org.springframework.web.context.support.XmlWebApplicationContext}
+			 */
 			loadBeanDefinitions(beanFactory);
 			this.beanFactory = beanFactory;
 		}
@@ -213,9 +225,11 @@ public abstract class AbstractRefreshableApplicationContext extends AbstractAppl
 	 * @see DefaultListableBeanFactory#setAllowEagerClassLoading
 	 */
 	protected void customizeBeanFactory(DefaultListableBeanFactory beanFactory) {
+		// 如果属性allowBeanDefinitionOverriding不为空, 设置给beanFactory对象相应属性(是否允许覆盖同名称的不同定义的对象);
 		if (this.allowBeanDefinitionOverriding != null) {
 			beanFactory.setAllowBeanDefinitionOverriding(this.allowBeanDefinitionOverriding);
 		}
+		// 如果属性allowCircularReferences不为空, 设置给beanFactory对象相应属性(是否允许对象之间存在循环依赖);
 		if (this.allowCircularReferences != null) {
 			beanFactory.setAllowCircularReferences(this.allowCircularReferences);
 		}
