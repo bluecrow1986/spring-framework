@@ -27,6 +27,8 @@ import org.springframework.lang.Nullable;
 import org.springframework.util.ReflectionUtils;
 
 /**
+ * 覆盖ClassLoader的特殊变体, 用于{@link AbstractApplicationContext}中的临时类型匹配.
+ * 为每个{@code loadClass}调用从缓存的字节数组中重新定义类, 以便在父类ClassLoader中拾取最近加载的类型
  * Special variant of an overriding ClassLoader, used for temporary type
  * matching in {@link AbstractApplicationContext}. Redefines classes from
  * a cached byte array for every {@code loadClass} call in order to
@@ -59,7 +61,10 @@ class ContextTypeMatchClassLoader extends DecoratingClassLoader implements Smart
 	/** Cache for byte array per class name. */
 	private final Map<String, byte[]> bytesCache = new ConcurrentHashMap<>(256);
 
-
+	/**
+	 * 构造器; 使用父类加载器进行构造上下文类型匹配类加载器
+	 * @param parent 父类加载器
+	 */
 	public ContextTypeMatchClassLoader(@Nullable ClassLoader parent) {
 		super(parent);
 	}

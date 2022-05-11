@@ -97,12 +97,18 @@ public abstract class ClassUtils {
 	private static final Map<Class<?>, Class<?>> primitiveTypeToWrapperMap = new IdentityHashMap<>(8);
 
 	/**
+	 * 使用原始类名作为key和相应的原始类作为value的映射
+	 * <p>
+	 * 例如: "int" -> "int.class"
+	 * <p>
 	 * Map with primitive type name as key and corresponding primitive
 	 * type as value, for example: "int" -> "int.class".
 	 */
 	private static final Map<String, Class<?>> primitiveTypeNameMap = new HashMap<>(32);
 
 	/**
+	 * 用通用的Java类名作为key和对应的类作为vale的映射; 主要用于远程调用的有效反序列化
+	 * <p>
 	 * Map with common Java language class name as key and corresponding Class as value.
 	 * Primarily for efficient deserialization of remote invocations.
 	 */
@@ -171,6 +177,9 @@ public abstract class ClassUtils {
 	}
 
 	/**
+	 * 获取默认类加载器, 一般返回线程上下文类加载器;
+	 * 没有就返回加载ClassUtils的类加载器, 还是没有就返回系统类加载器, 最后还是没有就返回null
+	 * <p>
 	 * Return the default ClassLoader to use: typically the thread context
 	 * ClassLoader, if available; the ClassLoader that loaded the ClassUtils
 	 * class will be used as fallback.
@@ -235,6 +244,11 @@ public abstract class ClassUtils {
 	}
 
 	/**
+	 * 使用classLoader加载name对应的Class对象<p>
+	 * 该方式是Spring用于代替Class.forName()的方法,
+	 * 支持返回原始的类实例("int")和数组类名("String[]");
+	 * 此外, 它还能够以Java source样式解析内部类名(如: "java.lang.Thread.State", 而不是"java.lang.Thread$State")
+	 * <p>
 	 * Replacement for {@code Class.forName()} that also returns Class instances
 	 * for primitives (e.g. "int") and array class names (e.g. "String[]").
 	 * Furthermore, it is also capable of resolving inner class names in Java source
@@ -251,55 +265,80 @@ public abstract class ClassUtils {
 			throws ClassNotFoundException, LinkageError {
 
 		Assert.notNull(name, "Name must not be null");
-
+		// 果name是个原始类型名, 就获取其对应的Class
 		Class<?> clazz = resolvePrimitiveClassName(name);
 		if (clazz == null) {
+			// 获取失败的话, 从缓存Map(用通用的Java类名作为key和对应的类作为vale的映射)中获取name对应的Class
 			clazz = commonClassCache.get(name);
 		}
+		// 如果获取的通用类不为null的话, 直接返回
 		if (clazz != null) {
 			return clazz;
 		}
 
 		// "java.lang.String[]" style arrays
+		// 如果name是以"[]"结尾的; 表示的是数组
 		if (name.endsWith(ARRAY_SUFFIX)) {
+			// 截取出name"[]"前面的字符串赋值给elementClassName
 			String elementClassName = name.substring(0, name.length() - ARRAY_SUFFIX.length());
+			// 传入elementClassName递归本方法获取其Class
 			Class<?> elementClass = forName(elementClassName, classLoader);
+			// 新建一个elementClass类型长度为0的数组，然后获取其类型返回出去
 			return Array.newInstance(elementClass, 0).getClass();
 		}
 
 		// "[Ljava.lang.String;" style arrays
+		// 如果names是以"[L"开头且以";"结尾; 表示的是普通Class对象
 		if (name.startsWith(NON_PRIMITIVE_ARRAY_PREFIX) && name.endsWith(";")) {
+			// 截取出name"[L"到";"之间的字符串赋值给elementName
 			String elementName = name.substring(NON_PRIMITIVE_ARRAY_PREFIX.length(), name.length() - 1);
+			// 传入elementClassName递归本方法获取其Class
 			Class<?> elementClass = forName(elementName, classLoader);
+			// 新建一个elementClass类型长度为0的数组，然后获取其类型返回出去
 			return Array.newInstance(elementClass, 0).getClass();
 		}
 
 		// "[[I" or "[[Ljava.lang.String;" style arrays
+		// 如果names是以"["开头; 表示内部数组类名
 		if (name.startsWith(INTERNAL_ARRAY_PREFIX)) {
+			// 截取出name"["后面的字符串赋值给elementName
 			String elementName = name.substring(INTERNAL_ARRAY_PREFIX.length());
+			// 传入elementClassName递归本方法获取其Class
 			Class<?> elementClass = forName(elementName, classLoader);
+			// 新建一个elementClass类型长度为0的数组，然后获取其类型返回出去
 			return Array.newInstance(elementClass, 0).getClass();
 		}
-
+		// 将classLoader赋值给clToUse变量
 		ClassLoader clToUse = classLoader;
 		if (clToUse == null) {
+			// 获取默认类加载器, 一般返回线程上下文类加载器
+			// 没有就返回加载ClassUtils的类加载器, 还是没有就返回系统类加载器, 最后还是没有就返回null
 			clToUse = getDefaultClassLoader();
 		}
 		try {
+			// 反射, 通过clToUse获取相关联类或接口的Class对象并返回
 			return Class.forName(name, false, clToUse);
 		}
+		// 如果反射未获取到对应的Class时, 查找其内部类
 		catch (ClassNotFoundException ex) {
+			// 如果找到不到类时
+			// 获取最后一个包名分割符"."的索引位置
 			int lastDotIndex = name.lastIndexOf(PACKAGE_SEPARATOR);
+			// 如果找到了索引位置
 			if (lastDotIndex != -1) {
+				// 尝试将name转换成内部类名, innerClassName=name的包名+"$"+name的类名
 				String innerClassName =
 						name.substring(0, lastDotIndex) + INNER_CLASS_SEPARATOR + name.substring(lastDotIndex + 1);
 				try {
+					// 反射, 通过clToUse获取内部类名对应的Class对象
 					return Class.forName(innerClassName, false, clToUse);
 				}
 				catch (ClassNotFoundException ex2) {
 					// Swallow - let original exception get through
+					// 内部类也不能获取到对应的Class时, 将此处的异常吃掉, 留给外层抛出
 				}
 			}
+			// 当将name转换成内部类名仍然获取不到Class对象时, 抛出异常
 			throw ex;
 		}
 	}
@@ -453,6 +492,8 @@ public abstract class ClassUtils {
 	}
 
 	/**
+	 * 将给定的类名解析为原始类, 如果合适, 根据JVM对原始类的命名规则
+	 * <p>
 	 * Resolve the given class name as primitive class, if appropriate,
 	 * according to the JVM's naming rules for primitive classes.
 	 * <p>Also supports the JVM's internal class names for primitive arrays.
@@ -467,8 +508,11 @@ public abstract class ClassUtils {
 		Class<?> result = null;
 		// Most class names will be quite long, considering that they
 		// SHOULD sit in a package, so a length check is worthwhile.
+		// 考虑到应该将它们放在包装中, 大多数类名都将很长, 因此进行长度检查是值得的
+		// 如果name不为null && name的长度小于等于7
 		if (name != null && name.length() <= 7) {
 			// Could be a primitive - likely.
+			// 从primitiveTypeNameMap中获取name对应的Class
 			result = primitiveTypeNameMap.get(name);
 		}
 		return result;

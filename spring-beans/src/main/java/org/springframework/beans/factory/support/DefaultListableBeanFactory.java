@@ -489,17 +489,30 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 		return getBeanNamesForType(type, true, true);
 	}
 
+
+	/**
+	 * 根据bean类型获取所有实现BeanDefinitionRegistryPostProcessor接口的beanName数组
+	 * @param type 要查找的bean类型
+	 * @param includeNonSingletons 是否考虑非单例bean
+	 * @param allowEagerInit 是否允许提早初始化
+	 * @return 所有实现BeanDefinitionRegistryPostProcessor接口的beanName数组
+	 */
 	@Override
 	public String[] getBeanNamesForType(@Nullable Class<?> type, boolean includeNonSingletons, boolean allowEagerInit) {
+		// 配置还未被冻结或者类型为null或者不允许早期初始化
 		if (!isConfigurationFrozen() || type == null || !allowEagerInit) {
 			return doGetBeanNamesForType(ResolvableType.forRawClass(type), includeNonSingletons, allowEagerInit);
 		}
+		// 注意: 只要isConfigurationFrozen()为false就一定不会走这里;
+		//      因为isConfigurationFrozen()为false的时候表示BeanDefinition可能还会发生更改和添加，所以不能进行缓存
+		// 如果允许非单例的bean, 那么从保存所有bean的集合中获取; 否则从单例bean中获取
 		Map<Class<?>, String[]> cache =
 				(includeNonSingletons ? this.allBeanNamesByType : this.singletonBeanNamesByType);
 		String[] resolvedBeanNames = cache.get(type);
 		if (resolvedBeanNames != null) {
 			return resolvedBeanNames;
 		}
+		// 如果缓存中没有获取到, 那么只能重新获取, 获取到之后就存入缓存
 		resolvedBeanNames = doGetBeanNamesForType(ResolvableType.forRawClass(type), includeNonSingletons, true);
 		if (ClassUtils.isCacheSafe(type, getBeanClassLoader())) {
 			cache.put(type, resolvedBeanNames);
@@ -507,40 +520,72 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 		return resolvedBeanNames;
 	}
 
+	/**
+	 * 干活的方法; 根据bean类型获取所有实现BeanDefinitionRegistryPostProcessor接口的beanName数组
+	 * @param type 要查找的bean类型
+	 * @param includeNonSingletons 是否考虑非单例bean
+	 * @param allowEagerInit 是否允许提早初始化
+	 * @return 所有实现BeanDefinitionRegistryPostProcessor接口的beanName数组
+	 */
 	private String[] doGetBeanNamesForType(ResolvableType type, boolean includeNonSingletons, boolean allowEagerInit) {
 		List<String> result = new ArrayList<>();
 
 		// Check all bean definitions.
+		// 遍历BeanDefinitionNames集合
 		for (String beanName : this.beanDefinitionNames) {
 			// Only consider bean as eligible if the bean name is not defined as alias for some other bean.
+			// 如果是别名, 则直接跳过
 			if (!isAlias(beanName)) {
 				try {
+					// 获取合并的BeanDefinition, 合并的BeanDefinition指的是整合了父BeanDefinition的属性, 然后属性值会转换为RootBeanDefinition
 					RootBeanDefinition mbd = getMergedLocalBeanDefinition(beanName);
+
 					// Only check bean definition if it is complete.
+					// mbd不是抽象的 && (允许早期初始化 || (mbd的beanClass已经被加载 || mbd非懒加载 || 允许早期加载) && 检查mdb的FactoryBean不需要立即初始化以确定其类型)
+					// 根据条件翻译:
+					// 1. 抽象的BeanDefinition是不做考虑; 因为抽象的就是拿来继承的;
+					// 2. 如果允许早期初始化, 那么直接短路进入方法体;
+					// 3. 如果不允许早期初始化, 那么需要满足以下三点(mbd的beanClass已经被加载 || mbd非懒加载 || 允许早期加载)的其中一点即可进行下一步条件判断, 否则直接跳出;
+					// 4. 检查mdb的FactoryBean不需要立即初始化以确定其类型;
 					if (!mbd.isAbstract() && (allowEagerInit ||
 							(mbd.hasBeanClass() || !mbd.isLazyInit() || isAllowEagerClassLoading()) &&
 									!requiresEagerInitForType(mbd.getFactoryBeanName()))) {
+						// 判断当前bean是否实现了FactoryBean接口
 						boolean isFactoryBean = isFactoryBean(beanName, mbd);
+						// 根据RootBeanDefinition来获取BeanDefinitionHolder对象
 						BeanDefinitionHolder dbd = mbd.getDecoratedDefinition();
+						// 定义匹配的标志位, 默认为false
 						boolean matchFound = false;
+						// 定义是否允许factoryBean的初始化的标志位 -> 允许早期初始化 || beanName在该BeanFactory的单例对象的高速缓存Map集合中
 						boolean allowFactoryBeanInit = (allowEagerInit || containsSingleton(beanName));
+						// 是否是非懒加载的标志位
 						boolean isNonLazyDecorated = (dbd != null && !mbd.isLazyInit());
+						// 如果没有实现FactoryBean接口
 						if (!isFactoryBean) {
+							// 考虑非单例bean || 是单例
 							if (includeNonSingletons || isSingleton(beanName, mbd, dbd)) {
+								// 以beanName为名字的bean的类型是否与type匹配, 赋值给matchFound
 								matchFound = isTypeMatch(beanName, type, allowFactoryBeanInit);
 							}
 						}
+						// 其他情况, 即实现FactoryBean接口
 						else {
+							// 非单例bean || 非懒加载 || (允许factoryBean的初始化 && 是单例)
 							if (includeNonSingletons || isNonLazyDecorated ||
 									(allowFactoryBeanInit && isSingleton(beanName, mbd, dbd))) {
+								// 以beanName为名字的bean的类型是否与type匹配, 赋值给matchFound
 								matchFound = isTypeMatch(beanName, type, allowFactoryBeanInit);
 							}
+							// beanName为名字的bean的类型与type不匹配
 							if (!matchFound) {
 								// In case of FactoryBean, try to match FactoryBean instance itself next.
+								// 如果是FactoryBean, 接下来尝试匹配FactoryBean实例本身 -> beanName = "&" + beanName
 								beanName = FACTORY_BEAN_PREFIX + beanName;
+								// 以"&beanName"为名字的bean的类型是否与type匹配, 赋值给matchFound
 								matchFound = isTypeMatch(beanName, type, allowFactoryBeanInit);
 							}
 						}
+						// 如果匹配
 						if (matchFound) {
 							result.add(beanName);
 						}
@@ -579,16 +624,19 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 				}
 				// Match raw bean instance (might be raw FactoryBean).
 				if (isTypeMatch(beanName, type)) {
+					// 所有实现BeanDefinitionRegistryPostProcessor接口的beanName集合中添加该beanName
 					result.add(beanName);
 				}
 			}
+			// 捕获没有这样的Bean定义异常(吃掉)
 			catch (NoSuchBeanDefinitionException ex) {
 				// Shouldn't happen - probably a result of circular reference resolution...
+				// 不应该发生 - 可能是循环引用解析的结果……
 				logger.trace(LogMessage.format(
 						"Failed to check manually registered singleton with name '%s'", beanName), ex);
 			}
 		}
-
+		// 集合转换成数组返回
 		return StringUtils.toStringArray(result);
 	}
 
@@ -806,15 +854,24 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 		return resolver.isAutowireCandidate(holder, descriptor);
 	}
 
+	/**
+	 * 获取该工厂beanName的BeanDefinition对象
+	 * @param beanName name of the bean to find a definition for
+	 * @return BeanDefinition对象
+	 * @throws NoSuchBeanDefinitionException 没有这样的Bean定义异常
+	 */
 	@Override
 	public BeanDefinition getBeanDefinition(String beanName) throws NoSuchBeanDefinitionException {
+		// 从Bean定义对象的映射中获取beanName对应的BeanDefinition对象
 		BeanDefinition bd = this.beanDefinitionMap.get(beanName);
+		// 如果从Bean定义对象的映射没有找到; 抛出没有这样的Bean定义异常
 		if (bd == null) {
 			if (logger.isTraceEnabled()) {
 				logger.trace("No bean named '" + beanName + "' found in " + this);
 			}
 			throw new NoSuchBeanDefinitionException(beanName);
 		}
+		// 返回beanName对应的BeanDefinition对象
 		return bd;
 	}
 
@@ -1075,8 +1132,14 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 
 	@Override
 	public void registerSingleton(String beanName, Object singletonObject) throws IllegalStateException {
+		/**
+		 * 调用父类的注册单例方法
+		 * {@link DefaultSingletonBeanRegistry}
+		 */
 		super.registerSingleton(beanName, singletonObject);
+		// 手动更新
 		updateManualSingletonNames(set -> set.add(beanName), set -> !this.beanDefinitionMap.containsKey(beanName));
+		// 清除根据类型映射的缓存
 		clearByTypeCache();
 	}
 

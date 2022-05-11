@@ -115,6 +115,11 @@ public class SimpleAliasRegistry implements AliasRegistry {
 		}
 	}
 
+	/**
+	 * 返回此给定名称是否定义为别名; 返回name是否存在于别名aliasMap中
+	 * @param name the name to check 要检查的名称
+	 * @return true/false
+	 */
 	@Override
 	public boolean isAlias(String name) {
 		return this.aliasMap.containsKey(name);
@@ -202,21 +207,29 @@ public class SimpleAliasRegistry implements AliasRegistry {
 	}
 
 	/**
+	 * 获取name的最终别名或者是全类名
+	 * <p>
 	 * Determine the raw name, resolving aliases to canonical names.
 	 * @param name the user-specified name
 	 * @return the transformed name
 	 */
 	public String canonicalName(String name) {
+		// 规范名称, 初始化为传入的name
 		String canonicalName = name;
 		// Handle aliasing...
+		// 处理过程当中使用的临时变量: 解析名称
 		String resolvedName;
+		// 遍历, 直到临时变量为空
 		do {
+			// 在别名集合中通过名称查找出的结果赋值给临时变量
 			resolvedName = this.aliasMap.get(canonicalName);
 			if (resolvedName != null) {
+				// 如果查找到的名称不为空时, 将临时变量赋值给规范名称
 				canonicalName = resolvedName;
 			}
 		}
 		while (resolvedName != null);
+		// 返回规范名称
 		return canonicalName;
 	}
 

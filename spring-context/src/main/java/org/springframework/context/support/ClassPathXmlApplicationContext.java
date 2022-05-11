@@ -153,7 +153,7 @@ public class ClassPathXmlApplicationContext extends AbstractXmlApplicationContex
 		if (refresh) {
 			/**
 			 * 如果是自动刷新的话进行刷新操作
-			 * 即容器的创建和刷新环节 -> IoC的生命周期
+			 * 即容器的创建和刷新环节 -> Bean的生命周期
 			 */
 			refresh();
 		}

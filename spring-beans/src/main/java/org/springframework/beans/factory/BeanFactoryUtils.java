@@ -61,6 +61,7 @@ public abstract class BeanFactoryUtils {
 
 
 	/**
+	 * 返回给定名称是否为FactoryBean的解引用名.(从FactoryBean的解引用前缀"&"开始)
 	 * Return whether the given name is a factory dereference
 	 * (beginning with the factory dereference prefix).
 	 * @param name the name of the bean
@@ -68,10 +69,14 @@ public abstract class BeanFactoryUtils {
 	 * @see BeanFactory#FACTORY_BEAN_PREFIX
 	 */
 	public static boolean isFactoryDereference(@Nullable String name) {
+		// 如果有传入bean名且bean名是以'&'开头, 则返回true,表示是BeanFactory的解引用;
+		// 否则返回false, 表示不是BeanFactory的解引用
 		return (name != null && name.startsWith(BeanFactory.FACTORY_BEAN_PREFIX));
 	}
 
 	/**
+	 * 判断是不是有&前缀, 没有就直接返回, 说明不是FactoryBean的名字, 否则就从缓存里获取, 然后就把前缀&去掉返回
+	 *
 	 * Return the actual bean name, stripping out the factory dereference
 	 * prefix (if any, also stripping repeated factory prefixes if found).
 	 * @param name the name of the bean
@@ -80,11 +85,15 @@ public abstract class BeanFactoryUtils {
 	 */
 	public static String transformedBeanName(String name) {
 		Assert.notNull(name, "'name' must not be null");
+		// 如果beanName不以&开头, 则直接返回
 		if (!name.startsWith(BeanFactory.FACTORY_BEAN_PREFIX)) {
 			return name;
 		}
+		// 从transformedBeanNameCache中获取bean名对应的转换后的名称
 		return transformedBeanNameCache.computeIfAbsent(name, beanName -> {
 			do {
+				// 从beanName的开头位置去掉'&', 并重新赋值给beanName, 再重新检查是还是以'&'开头, 是的话就再截
+				// 直到开头不是以'&'开头后, 加入到transformedBeanNameCache中
 				beanName = beanName.substring(BeanFactory.FACTORY_BEAN_PREFIX.length());
 			}
 			while (beanName.startsWith(BeanFactory.FACTORY_BEAN_PREFIX));

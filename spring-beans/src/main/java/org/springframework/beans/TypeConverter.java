@@ -38,6 +38,9 @@ import org.springframework.lang.Nullable;
 public interface TypeConverter {
 
 	/**
+	 * 将参数中的value转换成RequiredType类型;
+	 * 从String到任何类型的转换通常使用PropertyEditor类的setAsText方法或ConversionService中的Spring Converter.
+	 * <p>
 	 * Convert the value to the required type (if necessary from a String).
 	 * <p>Conversions from String to any type will typically use the {@code setAsText}
 	 * method of the PropertyEditor class, or a Spring Converter in a ConversionService.

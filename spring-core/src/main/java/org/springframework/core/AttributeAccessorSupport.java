@@ -41,6 +41,11 @@ public abstract class AttributeAccessorSupport implements AttributeAccessor, Ser
 	private final Map<String, Object> attributes = new LinkedHashMap<>();
 
 
+	/**
+	 * 设置属性值; 如果属性值为null, 则将被移除
+	 * @param name the unique attribute key
+	 * @param value the attribute value to be attached
+	 */
 	@Override
 	public void setAttribute(String name, @Nullable Object value) {
 		Assert.notNull(name, "Name must not be null");
@@ -59,6 +64,11 @@ public abstract class AttributeAccessorSupport implements AttributeAccessor, Ser
 		return this.attributes.get(name);
 	}
 
+	/**
+	 * 删除属性
+	 * @param name the unique attribute key
+	 * @return
+	 */
 	@Override
 	@Nullable
 	public Object removeAttribute(String name) {
@@ -79,6 +89,8 @@ public abstract class AttributeAccessorSupport implements AttributeAccessor, Ser
 
 
 	/**
+	 * 内部使用, 属性值的拷贝
+	 *
 	 * Copy the attributes from the supplied AttributeAccessor to this accessor.
 	 * @param source the AttributeAccessor to copy from
 	 */

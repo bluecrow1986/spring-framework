@@ -684,13 +684,13 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 
 		// Store pre-refresh ApplicationListeners...
 		// 判断刷新前的应用程序监听器集合是否为空; 无论是否为空都是将监听器添加到此集合中, 区别差在是否需要先初始化链表集合, 防止空指针
-		// 如果为空,则将监听器添加到此集合中
+		// 如果为空,则将应用程序监听器添加到此集合中
 		if (this.earlyApplicationListeners == null) {
 			this.earlyApplicationListeners = new LinkedHashSet<>(this.applicationListeners);
 		}
 		else {
 			// Reset local application listeners to pre-refresh state.
-			// 如果不为空则先清空集合对象, 再将监听器添加到此集合中
+			// 如果不为空则先清空集合对象, 再将应用程序监听器添加到此集合中
 			this.applicationListeners.clear();
 			this.applicationListeners.addAll(this.earlyApplicationListeners);
 		}
@@ -734,7 +734,7 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 		beanFactory.setBeanClassLoader(getClassLoader());
 		// 设置beanFactory的对象表达式解析器
 		beanFactory.setBeanExpressionResolver(new StandardBeanExpressionResolver(beanFactory.getBeanClassLoader()));
-		// 为beanFactory增加一个默认的属性编辑注册器, 这个主要是对bean属性等设置管理的一个工具类
+		// 为beanFactory增加一个默认的资源编辑器, 这个主要是对bean属性等设置管理的一个工具类
 		beanFactory.addPropertyEditorRegistrar(new ResourceEditorRegistrar(this, getEnvironment()));
 
 		// Configure the bean factory with context callbacks.
@@ -792,13 +792,27 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 		}
 
 		// Register default environment beans.
-		// TODO: 一级缓存
+		/**
+		 * 注册默认的[环境bean]到一级缓存中(包含下边的系统属性和系统环境 -> {@link StandardEnvironment#propertySources})
+		 * key: environment
+		 * value: {@link ConfigurableEnvironment} -> {@link StandardEnvironment}
+		 */
 		if (!beanFactory.containsLocalBean(ENVIRONMENT_BEAN_NAME)) {
 			beanFactory.registerSingleton(ENVIRONMENT_BEAN_NAME, getEnvironment());
 		}
+		/**
+		 * 注册默认的[系统属性bean]到一级缓存中
+		 * key: systemProperties
+		 * value: {@link java.util.Properties}
+		 */
 		if (!beanFactory.containsLocalBean(SYSTEM_PROPERTIES_BEAN_NAME)) {
 			beanFactory.registerSingleton(SYSTEM_PROPERTIES_BEAN_NAME, getEnvironment().getSystemProperties());
 		}
+		/**
+		 * 注册默认的[系统环境bean]到一级缓存中
+		 * key: systemEnvironment
+		 * value: {@link java.util.Collections}
+		 */
 		if (!beanFactory.containsLocalBean(SYSTEM_ENVIRONMENT_BEAN_NAME)) {
 			beanFactory.registerSingleton(SYSTEM_ENVIRONMENT_BEAN_NAME, getEnvironment().getSystemEnvironment());
 		}
@@ -815,27 +829,37 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 	}
 
 	/**
+	 * 实例化并且调用所有已经注册了的beanFactoryPostProcessor, 遵循指明的顺序
+	 * 注意: 必须在单例实例化之前调用
 	 * Instantiate and invoke all registered BeanFactoryPostProcessor beans,
 	 * respecting explicit order if given.
 	 * <p>Must be called before singleton instantiation.
 	 */
 	protected void invokeBeanFactoryPostProcessors(ConfigurableListableBeanFactory beanFactory) {
+		// 获取到当前应用程序上下文的beanFactoryPostProcessors变量的值, 并且实例化调用执行所有已经注册的beanFactoryPostProcessor
+		// 默认情况下, 通过getBeanFactoryPostProcessors()来获取已经注册的BeanFactoryPostProcessors;
+		// 但是默认是空的, 所以这里是进行扩展操作
 		PostProcessorRegistrationDelegate.invokeBeanFactoryPostProcessors(beanFactory, getBeanFactoryPostProcessors());
 
 		// Detect a LoadTimeWeaver and prepare for weaving, if found in the meantime
 		// (e.g. through an @Bean method registered by ConfigurationClassPostProcessor)
+		// 检查beanFactory中是否有loadTimeWeaver的Bean
 		if (beanFactory.getTempClassLoader() == null && beanFactory.containsBean(LOAD_TIME_WEAVER_BEAN_NAME)) {
+			// 如果有, 使用LoadTimeWeaverAwareProcessor进行覆盖
 			beanFactory.addBeanPostProcessor(new LoadTimeWeaverAwareProcessor(beanFactory));
+			// 使用父类加载器进行构造上下文类型匹配类加载器, 并用来进行类型的匹配
 			beanFactory.setTempClassLoader(new ContextTypeMatchClassLoader(beanFactory.getBeanClassLoader()));
 		}
 	}
 
 	/**
+	 * 通过委托的方式, 实例化并且注册所有的beanPostProcessor(后置处理器)
 	 * Instantiate and register all BeanPostProcessor beans,
 	 * respecting explicit order if given.
 	 * <p>Must be called before any instantiation of application beans.
 	 */
 	protected void registerBeanPostProcessors(ConfigurableListableBeanFactory beanFactory) {
+		// 通过委托的方式进行注册后置处理器
 		PostProcessorRegistrationDelegate.registerBeanPostProcessors(beanFactory, this);
 	}
 

@@ -296,65 +296,107 @@ public abstract class AbstractBeanDefinition extends BeanMetadataAttributeAccess
 	 * </ul>
 	 */
 	public void overrideFrom(BeanDefinition other) {
+		// 如果给定的BeanClassName不为空, 则覆盖this.beanClass
 		if (StringUtils.hasLength(other.getBeanClassName())) {
 			setBeanClassName(other.getBeanClassName());
 		}
+		// 如果给定的Scope不为空, 则覆盖this.scope
 		if (StringUtils.hasLength(other.getScope())) {
 			setScope(other.getScope());
 		}
+		// 覆盖this.abstractFlag
 		setAbstract(other.isAbstract());
+		// 如果给定的FactoryBeanName不为空, 则覆盖this.factoryBeanName
 		if (StringUtils.hasLength(other.getFactoryBeanName())) {
 			setFactoryBeanName(other.getFactoryBeanName());
 		}
+		// 如果给定的FactoryMethodName不为空, 则覆盖this.factoryMethodName
 		if (StringUtils.hasLength(other.getFactoryMethodName())) {
 			setFactoryMethodName(other.getFactoryMethodName());
 		}
+		// 覆盖this.role
 		setRole(other.getRole());
+		// 覆盖this.source
 		setSource(other.getSource());
+		// 属性值的拷贝
 		copyAttributesFrom(other);
-
+		// 如果给定的BeanDefinition实现了AbstractBeanDefinition
 		if (other instanceof AbstractBeanDefinition) {
 			AbstractBeanDefinition otherAbd = (AbstractBeanDefinition) other;
+			// 如果BeanClass存在, 则覆盖this.beanClass
 			if (otherAbd.hasBeanClass()) {
 				setBeanClass(otherAbd.getBeanClass());
 			}
+			// 补充:
+			// this.indexedArgumentValues
+			// this.genericArgumentValues
 			if (otherAbd.hasConstructorArgumentValues()) {
 				getConstructorArgumentValues().addArgumentValues(other.getConstructorArgumentValues());
 			}
+			// 补充:
+			// this.propertyValueList
 			if (otherAbd.hasPropertyValues()) {
 				getPropertyValues().addPropertyValues(other.getPropertyValues());
 			}
+			// 补充:
+			// this.overrides
 			if (otherAbd.hasMethodOverrides()) {
 				getMethodOverrides().addOverrides(otherAbd.getMethodOverrides());
 			}
+			// 获取给定的BeanDefinition是否为懒加载
 			Boolean lazyInit = otherAbd.getLazyInit();
+			// 如果懒加载标识不为空, 覆盖this.lazyInit
 			if (lazyInit != null) {
 				setLazyInit(lazyInit);
 			}
+			// this.autowireMode
 			setAutowireMode(otherAbd.getAutowireMode());
+			// this.dependencyCheck
 			setDependencyCheck(otherAbd.getDependencyCheck());
+			// this.dependsOn
 			setDependsOn(otherAbd.getDependsOn());
+			// this.autowireCandidate
 			setAutowireCandidate(otherAbd.isAutowireCandidate());
+			// this.primary
 			setPrimary(otherAbd.isPrimary());
+			// 补充合并: this.qualifiers
 			copyQualifiersFrom(otherAbd);
+			// this.instanceSupplier
 			setInstanceSupplier(otherAbd.getInstanceSupplier());
+			// this.nonPublicAccessAllowed
 			setNonPublicAccessAllowed(otherAbd.isNonPublicAccessAllowed());
+			// this.lenientConstructorResolution
 			setLenientConstructorResolution(otherAbd.isLenientConstructorResolution());
+			// 如果初始化方法名称不为空
 			if (otherAbd.getInitMethodName() != null) {
+				// this.initMethodName
 				setInitMethodName(otherAbd.getInitMethodName());
+				// this.enforceInitMethod
 				setEnforceInitMethod(otherAbd.isEnforceInitMethod());
 			}
+			// 如果销毁方法名称不为空
 			if (otherAbd.getDestroyMethodName() != null) {
+				// this.destroyMethodName
 				setDestroyMethodName(otherAbd.getDestroyMethodName());
+				// this.enforceDestroyMethod
 				setEnforceDestroyMethod(otherAbd.isEnforceDestroyMethod());
 			}
+			// this.synthetic
 			setSynthetic(otherAbd.isSynthetic());
+			// this.resource(设置bean定义来自的资源<为了在出现错误时显示上下文>)
 			setResource(otherAbd.getResource());
 		}
 		else {
+			// 补充:
+			// this.indexedArgumentValues
+			// this.genericArgumentValues
 			getConstructorArgumentValues().addArgumentValues(other.getConstructorArgumentValues());
+			// 补充:
+			// this.propertyValueList
 			getPropertyValues().addPropertyValues(other.getPropertyValues());
+			// this.lazyInit
 			setLazyInit(other.isLazyInit());
+			// this.resource = (resourceDescription != null ? new DescriptiveResource(resourceDescription) : null);
 			setResourceDescription(other.getResourceDescription());
 		}
 	}
@@ -387,6 +429,8 @@ public abstract class AbstractBeanDefinition extends BeanMetadataAttributeAccess
 	}
 
 	/**
+	 * this.beanClasses是对象, 可以是String也可以是Class
+	 * <p>
 	 * Return the current bean class name of this bean definition.
 	 */
 	@Override
@@ -453,6 +497,10 @@ public abstract class AbstractBeanDefinition extends BeanMetadataAttributeAccess
 	}
 
 	/**
+	 * 解析当前bean对应的Class对象
+	 * <p>
+	 * 确定被包装的bean的类, 必要时从指定的类名解析它. 当使用已解析的bean类调用时, 还将从其名称中重新加载指定的类.
+	 * <p>
 	 * Determine the class of the wrapped bean, resolving it from a
 	 * specified class name if necessary. Will also reload a specified
 	 * Class from its name when called with the bean class already resolved.
@@ -462,6 +510,7 @@ public abstract class AbstractBeanDefinition extends BeanMetadataAttributeAccess
 	 */
 	@Nullable
 	public Class<?> resolveBeanClass(@Nullable ClassLoader classLoader) throws ClassNotFoundException {
+		// 获取className
 		String className = getBeanClassName();
 		if (className == null) {
 			return null;

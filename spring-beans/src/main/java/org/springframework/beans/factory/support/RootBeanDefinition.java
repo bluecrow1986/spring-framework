@@ -60,13 +60,20 @@ public class RootBeanDefinition extends AbstractBeanDefinition {
 	@Nullable
 	private AnnotatedElement qualifiedElement;
 
-	/** Determines if the definition needs to be re-merged. */
+	/**
+	 * beandefinition是否需要重新合并定义的标记
+	 * <p>
+	 * Determines if the definition needs to be re-merged.
+	 */
 	volatile boolean stale;
 
 	boolean allowCaching = true;
 
 	boolean isFactoryMethodUnique = false;
 
+	/**
+	 * 目标类型
+	 */
 	@Nullable
 	volatile ResolvableType targetType;
 
@@ -78,7 +85,11 @@ public class RootBeanDefinition extends AbstractBeanDefinition {
 	@Nullable
 	volatile Boolean isFactoryBean;
 
-	/** Package-visible field for caching the return type of a generically typed factory method. */
+	/**
+	 * 通用类型工厂方法的返回类型
+	 * <p>
+	 * Package-visible field for caching the return type of a generically typed factory method.
+	 */
 	@Nullable
 	volatile ResolvableType factoryMethodReturnType;
 
